@@ -1,4 +1,3 @@
-
 //#########################全局###############################
 //数据
 let data_tx = pins.createBuffer(38);
@@ -860,7 +859,7 @@ namespace moco_舵机控制 {
         serial.writeBuffer(ToSlaveBuf_1)
         pins.digitalWritePin(DigitalPin.P6, 1)
         pins.digitalWritePin(DigitalPin.P16, 1)
-        basic.pause(200)
+        basic.pause(20)
     }
 
     //% block=MOCO.舵机控制 block="舵机| 号 %h|PWM值 %pwm|变化（快慢） %Gap|"
