@@ -11,6 +11,7 @@ let rc_att_cmd_x = 0.00 //俯仰
 let rc_att_cmd_y = 0.00 //侧摆
 let rc_att_cmd = 0.00 //航向角
 let robot_mode = 0
+let robot_mode_1 = 0
 let state = 0
 
 //SPI
@@ -45,6 +46,7 @@ function SPI_Send() {
         }
         pins.digitalWritePin(DigitalPin.P6, 1)
         pins.digitalWritePin(DigitalPin.P16, 1)
+        serial.writeBuffer(InfoTemp)
         //serial.writeBuffer(ToSlaveBuf)
         SPI_unpacking()
         basic.pause(20)
@@ -174,7 +176,7 @@ function Standing() {
         SPI_Send()
         // serial.writeNumber(9)
         // serial.writeNumber(robot_mode)
-        if (robot_mode == 1) {
+        if (robot_mode == 1 || robot_mode == 0x02) {
             gait_mode = 4
             SPI_Send()
             //serial.writeNumber(10)
@@ -229,10 +231,12 @@ namespace 舵狗_底盘模式 {
     }
     //步态选择
     export enum gait {
-        //% block="慢跑"
-        慢跑,
+        //% block="小跑"
+        小跑,
         //% block="快跑"
-        快跑
+        快跑,
+        //% block="爬行"
+        爬行
     }
 
     //舵狗_反馈信息
@@ -300,6 +304,23 @@ namespace 舵狗_底盘模式 {
         Standing()
     }
 
+    //舵狗_摔倒自恢复
+    //% block=舵狗_摔倒自恢复 block="舵狗_摔倒自恢复"
+    //%weight=2
+    export function 舵狗_摔倒自恢复(): void {
+        if (robot_mode != 0x08)
+            return
+        if (robot_mode == 0x08) {
+            gait_mode = 0x07
+            SPI_Send()
+            robot_mode_1 = robot_mode
+            while (robot_mode_1 != 0x07) {
+                return
+            }
+        }
+    }
+
+
     //舵狗_心跳
     //% block=舵狗.舵狗_心跳 block="舵狗_心跳"
     //%weight=2
@@ -315,7 +336,7 @@ namespace 舵狗_底盘模式 {
         if (robot_mode == 13) {
             Standing()
         }
-        if (robot_mode == 1) {
+        if (robot_mode == 1 || robot_mode == 0X02) {
             rc_pos_cmd = 0.01
         }
         SPI_Send()
@@ -332,8 +353,8 @@ namespace 舵狗_底盘模式 {
     //% name.fieldEditor="gridpicker" name.fieldOptions.columns=10
     export function 舵狗_步态(g: gait): void {
         switch (g) {
-            case gait.慢跑:
-                gait_mode = 1;
+            case gait.小跑:
+                gait_mode = 0x01;
                 while (1) {
                     SPI_Send()
                     if (robot_mode == 13) {
@@ -342,11 +363,21 @@ namespace 舵狗_底盘模式 {
                         return
                     }
                 }
-            case gait.快跑:
-                gait_mode = 2;
+            case gait.爬行:
+                gait_mode = 0x03;
                 while (1) {
                     SPI_Send()
-                    if (robot_mode == 5) {
+                    if (robot_mode == 6) {
+                        SPI_Send()
+                        //serial.writeNumber(2)
+                        return
+                    }
+                }
+            case gait.快跑:
+                gait_mode = 0x02;
+                while (1) {
+                    SPI_Send()
+                    if (robot_mode == 13) {
                         SPI_Send()
                         //serial.writeNumber(2)
                         return
@@ -1255,46 +1286,46 @@ namespace 舵狗_语音识别 {
                 break
 
             case 0x003: 舵狗_底盘模式.舵狗_数据清除()
-                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑)
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.小跑)
                 舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.前进, voice_speed, 1); break
 
             case 0x004: 舵狗_底盘模式.舵狗_数据清除()
-                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑)
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.小跑)
                 舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.后退, voice_speed, 1); break
 
             case 0x005: 舵狗_底盘模式.舵狗_数据清除()
-                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑)
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.小跑)
                 舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.左移, voice_speed, 1); break
 
             case 0x006: 舵狗_底盘模式.舵狗_数据清除()
-                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑)
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.小跑)
                 舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.右移, voice_speed, 1); break
 
             case 0x007: 舵狗_底盘模式.舵狗_数据清除()
-                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑)
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.小跑)
                 舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.左转, voice_speed, 1); break
 
             case 0x008: 舵狗_底盘模式.舵狗_数据清除()
-                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑)
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.小跑)
                 舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.右转, voice_speed, 1); break
 
             case 0x009: 舵狗_底盘模式.舵狗_数据清除()
-                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑)
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.小跑)
                 舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.前进, voice_speed, 1)
                 舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.左移, voice_speed, 1); break
 
             case 0x00A: 舵狗_底盘模式.舵狗_数据清除()
-                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑)
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.小跑)
                 舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.前进, voice_speed, 1)
                 舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.右移, voice_speed, 1); break
 
             case 0x00B: 舵狗_底盘模式.舵狗_数据清除()
-                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑)
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.小跑)
                 舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.后退, voice_speed, 1)
                 舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.左移, voice_speed, 1); break
 
             case 0x00C: 舵狗_底盘模式.舵狗_数据清除()
-                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑)
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.小跑)
                 舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.后退, voice_speed, 1)
                 舵狗_底盘模式.舵狗_控制(舵狗_底盘模式.mode.右移, voice_speed, 1); break
 
@@ -1326,10 +1357,10 @@ namespace 舵狗_语音识别 {
                 舵狗_底盘模式.舵狗_高度(0); break
             //快速踏步
             case 0x14: 舵狗_底盘模式.舵狗_数据清除()
-                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑); break
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.小跑); break
             //慢速踏步
             case 0x15: 舵狗_底盘模式.舵狗_数据清除()
-                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.慢跑); break
+                舵狗_底盘模式.舵狗_步态(舵狗_底盘模式.gait.小跑); break
             //加速
             case 0x16: 舵狗_底盘模式.舵狗_数据清除()
                 voice_speed = 10; break
